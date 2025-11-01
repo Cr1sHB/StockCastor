@@ -1,0 +1,90 @@
+name: Stock Castor CI/CD
+
+# 1. TRIGGERS
+on:
+  push:
+    branches:
+      - dev         # Al hacer push a la rama 'dev'
+      - main        # Al hacer push a la rama 'main'
+  pull_request:
+    branches:
+      - dev         # Al abrir un Pull Request hacia 'dev'
+
+# 2. TAREAS (Jobs)
+jobs:
+  
+  # -------------------------------------
+  # TAREA 1: Lint y Pruebas Unitarias
+  # -------------------------------------
+  lint_and_test:
+    name: Lint & Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Ejecutar ESLint (Linting)
+        run: npm run lint
+
+      - name: Ejecutar Pruebas Unitarias (Jest)
+        run: npm run test -- --ci --watchAll=false
+  
+  # -------------------------------------
+  # TAREA 2: Compilación de la App Android
+  # -------------------------------------
+  build_android:
+    name: Build Android App
+    needs: lint_and_test 
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Configurar Java (JDK)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Generar Keystore para firmado
+        run: |
+          echo "${{ secrets.ANDROID_SIGNING_KEY_BASE64 }}" | base64 --decode > ./android/app/stock-castor-keystore.jks
+
+      - name: Crear archivo gradle.properties
+        run: |
+          echo "MYAPP_UPLOAD_STORE_FILE=stock-castor-keystore.jks" >> ./android/gradle.properties
+          echo "MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> ./android/gradle.properties
+          echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> ./android/gradle.properties
+          echo "MYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> ./android/gradle.properties
+      
+    
+      - name: Compilar Android App Bundle (AAB)
+        run: |
+          cd android
+          ./gradlew bundleRelease
+
+      - name: Cargar Artefacto (AAB)
+        uses: actions/upload-artifact@v4
+        with:
+          name: stock-castor-aab 
+          path: android/app/build/outputs/bundle/release/app-release.aab 
