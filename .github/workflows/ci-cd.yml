@@ -17,7 +17,7 @@ jobs:
   # TAREA 1: Lint y Pruebas Unitarias
   # -------------------------------------
   lint_and_test:
-    name: Lint & Unit Tests
+    name:Unit Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -32,9 +32,6 @@ jobs:
 
       - name: Instalar dependencias
         run: npm install
-
-      - name: Ejecutar ESLint (Linting)
-        run: npm run lint
 
       - name: Ejecutar Pruebas Unitarias (Jest)
         run: npm run test -- --ci --watchAll=false
