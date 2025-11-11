@@ -17,7 +17,7 @@ jobs:
   # TAREA 1: Lint y Pruebas Unitarias
   # -------------------------------------
   lint_and_test:
-    name:Unit Tests
+    name: Unit Tests
     runs-on: ubuntu-latest
 
     steps:
